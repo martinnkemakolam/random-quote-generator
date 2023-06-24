@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    @import url("https://fonts.google.com/specimen/Manrope");
+    body{
+        background-color: hsl(218, 23%, 16%);
+        font-family: Manrope;
+    }
+    .adviceHead{
+        color: hsl(150, 100%, 66%);
+        word-spacing: 20px;
+        font-size: 20px;
+        font-weight: 500;
+    }
+    .mainCover{
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        background-color: hsl(217, 19%, 24%);
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        border-radius: 10px;
+        align-items: center;
+        justify-content: space-around;
+        max-width: 600px;
+        width: 90%;
+        min-height: 400px;
+    }
+    .adviceBody{
+        text-align: center;
+        font-size: 28px;
+        color: hsl(193, 38%, 86%);
+    }
+    .mobile{
+        display: none;
+    }
+    .dice{
+        padding: 15px;
+        border-radius: 50%;
+        background-color: hsl(150, 100%, 66%);
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        bottom: -5%;
+        box-sizing: border-box;
+    }
+    .loading{
+        text-align: center;
+        font-size: 30px;
+        font-weight: 900;
+        background-color: yellow;
+        position: fixed;
+        width: 100%;
+        top: -100px;
+        transition: all 300ms;
+    }
+    .loading.active{
+        top: 0;
+    }
+    @media (max-width: 600px) {
+        .mobile{
+            display: block;
+        }
+        .desktop{
+            display: none;
+        }
+    }
+</style>
+<body>
+    <div class="mainCover">
+        <div class="adviceHead">ADVICE  #<span id="number">0</span></div>
+        <div class="adviceBody">
+            "<span class="advice">Click the dice to generate an advice.</span>"
+        </div>
+        <div class="bottom">
+            <img class="desktop" src="./images/pattern-divider-desktop.svg" alt="pattern-divider-desktop">
+            <img class="mobile" src="./images/pattern-divider-mobile.svg" alt="pattern-divider-mobile">
+        </div>
+        <div class="dice" onclick="getData()">
+            <img id="dice" src="./images/icon-dice.svg" alt="dice">
+        </div>
+    </div>
+    <div class="loading">
+          loading...  
+    </div>
+    <script>
+        let num  = 0
+        let check = document.querySelector('#number')
+        let advice = document.querySelector(".advice")
+        let  web_Worker = new Worker('./workers.js')
+        let arr = []
+        let loading = document.querySelector('.loading')
+        document.body.onload=()=>{
+            getData()
+        }
+        function getData() {
+            // used to send data to worker script
+            web_Worker.postMessage("https://api.adviceslip.com/advice")
+        }
+        // used to receive message from worker script || called anytime a postmessage from workers is called
+        web_Worker.onmessage=(evt)=>{
+            arr = arr.concat(...evt.data.array)
+            document.querySelector("#dice").onclick=()=>{
+                if(num === 30){
+                    web_Worker.postMessage("https://api.adviceslip.com/advice")
+                }
+                if (typeof( arr[num]) === "undefined") {
+                    loading.classList.add('active')
+                    setTimeout(()=>{
+                        loading.classList.remove('active')
+                    })
+                }else{
+                    advice.innerHTML = arr[num]
+                    check.innerHTML = num + 1
+                    num = num + 1
+                }
+            }
+        }
+        web_Worker.onerror=(evt)=>{
+            console.error(evt)
+        }
+        web_Worker.onmessageerror=(err)=> console.log(err)
+        // worker to fetch data
+    </script>
+</body>
+</html>
